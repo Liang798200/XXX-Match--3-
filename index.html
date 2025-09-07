@@ -1,0 +1,2371 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>三消RPG - 遊戲界面</title>
+<style>
+/* 整體頁面樣式 */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    user-select: none;
+    overflow: hidden;
+    touch-action: none; /* 防止移動端滑動時的頁面滾動 */
+}
+
+/* 遊戲主容器,模擬手機豎屏比例 */
+.game-wrapper {
+    height: 98vh;
+    max-width: 98vw;
+    aspect-ratio: 1125 / 2436;
+    margin: auto;
+    background-color: #10101a;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 2px solid #0f3460;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    container-type: inline-size;
+    position: relative; /* For test mode indicator */
+}
+
+.game-wrapper.shake {
+    animation: shake-animation 0.4s ease-in-out;
+}
+@keyframes shake-animation {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60% { transform: translateX(3px); }
+}
+
+#effect-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0;
+}
+#effect-overlay.flash {
+    animation: flash-animation 0.5s ease-out;
+}
+@keyframes flash-animation {
+    0% { opacity: 0.7; }
+    100% { opacity: 0; }
+}
+
+
+#test-mode-indicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #d90429;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 2.5cqi;
+    z-index: 100;
+    display: none; /* 預設隱藏 */
+}
+
+/* --- 上半部 - 資訊面板 --- */
+.info-panel {
+    height: 42.5%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* --- 下半部 - 玩法面板 --- */
+.gameplay-panel {
+    height: 57.5%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* --- 頂部戰鬥場景 --- */
+.battle-scene {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    position: relative;
+    background-color: #2a2a3e;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #0f3460;
+}
+
+.score-display {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f9d923;
+    font-size: 2.8cqi;
+    background-color: rgba(0,0,0,0.5);
+    padding: 5px 15px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+}
+
+.score-display .label {
+    color: #e0e0e0;
+}
+
+#xp-bar-container {
+    width: 10cqi;
+    height: 1.5cqi;
+    background-color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #555;
+}
+
+#xp-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #9d4edd, #c77dff);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.team {
+    width: 45%;
+    position: relative;
+}
+
+.character-slot {
+    position: absolute;
+    width: 13cqi;
+    text-align: center;
+    transition: filter 0.3s;
+}
+
+.player-team .character-slot .char-icon.ultimate-ready {
+    cursor: pointer;
+    animation: ultimate-ready-glow 1.5s infinite alternate;
+}
+
+@keyframes ultimate-ready-glow {
+    from { box-shadow: 0 0 8px 2px #fff; }
+    to { box-shadow: 0 0 20px 8px #fca311; }
+}
+
+.char-icon {
+    width: 12cqi;
+    height: 12cqi;
+    border-radius: 10px;
+    margin: 0 auto 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5cqi;
+    font-weight: bold;
+    color: white;
+    border: 2px solid #fff;
+    position: relative;
+}
+
+.rank-icon {
+    position: absolute;
+    top: -1.5cqi;
+    left: -1.5cqi;
+    width: 4cqi;
+    height: 4cqi;
+    font-size: 3cqi;
+    background-color: #1a1a2e;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #fff;
+    z-index: 5;
+}
+
+.enemy-intent-icon {
+    position: absolute;
+    top: -2cqi;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5cqi;
+    height: 5cqi;
+    font-size: 4cqi;
+    background-color: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    animation: intent-appear 0.5s ease-out;
+}
+@keyframes intent-appear {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.boss-mechanic-display {
+    position: absolute;
+    bottom: -3cqi;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 2.5cqi;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+}
+
+
+.status-bar {
+    height: 1cqi;
+    border-radius: 4px;
+    margin-bottom: 3px;
+    background-color: #111;
+    overflow: hidden; /* Ensure inner bars are clipped */
+}
+
+.status-bar > div {
+    height: 100%;
+    border-radius: 4px;
+}
+
+.hp-bar { background-color: #e94560; transition: width 0.3s ease; }
+.mp-bar { background-color: #1e90ff; transition: width 0.3s ease; }
+
+.char-icon.damaged {
+    animation: damage-flash 0.3s ease-in-out;
+}
+
+@keyframes damage-flash {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 15px 5px #ff0000; }
+}
+
+.char-icon.dead {
+    filter: grayscale(100%);
+    background-color: #555 !important;
+}
+
+.char-icon.attacking {
+    animation: attack-pulse 0.5s ease-in-out;
+}
+
+.char-icon.casting-skill {
+    animation: skill-cast-glow 0.8s ease-in-out;
+}
+
+@keyframes skill-cast-glow {
+    0% { box-shadow: none; }
+    50% { box-shadow: 0 0 20px 8px #ffff00; transform: scale(1.2); }
+    100% { box-shadow: none; transform: scale(1); }
+}
+
+
+@keyframes attack-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); box-shadow: 0 0 15px 5px #fca311; }
+    100% { transform: scale(1); }
+}
+
+.character-slot.frozen {
+    filter: brightness(0.7);
+}
+
+.status-effects {
+    position: absolute;
+    bottom: 2.5cqi;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    height: 4cqi;
+    z-index: 10;
+    pointer-events: none;
+}
+.effect-icon {
+    width: 4cqi;
+    height: 4cqi;
+    background-color: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3cqi;
+    color: white;
+    text-shadow: 1px 1px 2px black;
+    animation: status-appear 0.3s ease-out;
+}
+@keyframes status-appear {
+    from { transform: scale(0) rotate(-90deg); opacity: 0; }
+    to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.freeze-icon::before { content: '🧊'; }
+
+
+/* Player team positions */
+[data-id="C"] { top: 2%; left: 5%; }
+[data-id="D"] { top: 35%; left: 5%; }
+[data-id="E"] { top: 68%; left: 5%; }
+[data-id="A"] { top: 18%; left: 40%; }
+[data-id="B"] { top: 51%; left: 40%; }
+
+/* Enemy team positions */
+[data-id="c"] { top: 2%; right: 5%; }
+[data-id="d"] { top: 35%; right: 5%; }
+[data-id="e"] { top: 68%; right: 5%; }
+[data-id="a"] { top: 18%; right: 40%; }
+[data-id="b"] { top: 51%; right: 40%; }
+
+.countdown-bar {
+    flex-shrink: 0;
+    padding: 8px;
+    background-color: #162447;
+    text-align: center;
+    font-size: 2.8cqi;
+    color: #fca311;
+    border-bottom: 2px solid #0f3460;
+    position: relative;
+    transition: box-shadow 0.3s;
+}
+
+.countdown-bar.urgent {
+    animation: pulse-red 1s infinite alternate;
+    border-radius: 5px; /* for box-shadow */
+}
+@keyframes pulse-red {
+    from { box-shadow: 0 0 4px #e94560; }
+    to { box-shadow: 0 0 16px 4px #e94560; }
+}
+
+#timer-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #e94560, #f9d923);
+    width: 100%;
+    transition: width 1s linear;
+}
+
+.props-bar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 5px;
+    background-color: #10101a;
+}
+
+.prop-slot {
+    width: 10cqi;
+    height: 10cqi;
+    background-color: #4a4a5e;
+    border-radius: 8px;
+    border: 2px solid #6a6a7e;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.board-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    min-height: 0;
+    position: relative;
+}
+
+#combo-display {
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8cqi;
+    font-weight: bold;
+    color: #ffc300;
+    text-shadow: 3px 3px 5px #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.2s;
+}
+
+#combo-display.show {
+    opacity: 1;
+    animation: combo-pop 0.5s ease-out;
+}
+
+@keyframes combo-pop {
+    0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+    70% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+#game-board {
+    width: 100%;
+    aspect-ratio: 8 / 10;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 4px;
+    background-color: #0f3460;
+    border: 5px solid #1f4068;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+.rune {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.rune.dropping {
+    animation: drop-animation 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+}
+
+@keyframes drop-animation {
+    from { transform: translateY(var(--start-y)); }
+    to { transform: translateY(0); }
+}
+
+.rune.selected {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px 3px #ffffff;
+    border: 2px solid white;
+}
+
+.rune-0 { background: radial-gradient(circle, #ff7b7b, #e94560); }
+.rune-1 { background: radial-gradient(circle, #7be8ff, #1e90ff); }
+.rune-2 { background: radial-gradient(circle, #7bff8a, #32cd32); }
+.rune-3 { background: radial-gradient(circle, #fff07b, #f9d923); }
+.rune-4 { background: radial-gradient(circle, #e37bff, #9932cc); }
+
+.rune .special-icon {
+    width: 80%;
+    height: 80%;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.7));
+    z-index: 1;
+}
+
+.rune-status-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 5cqi;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 3;
+    animation: pulse-status-icon 1.5s infinite;
+}
+
+@keyframes pulse-status-icon {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.rune-debug-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2cqi;
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black;
+    pointer-events: none;
+    z-index: 2;
+    display: none; /* 預設隱藏 */
+}
+
+.game-wrapper.test-mode-on .rune-debug-info {
+    display: flex; /* 測試模式下顯示 */
+}
+
+.matched {
+    animation: disappear 0.5s forwards;
+}
+
+@keyframes disappear {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+.rune.burning {
+    animation: burning-effect 1s infinite alternate;
+    box-shadow: 0 0 15px 5px #ff4500, inset 0 0 5px 2px #ff8c00;
+}
+
+@keyframes burning-effect {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+}
+
+.rune.frozen {
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: inset 0 0 10px 4px #a2d2ff;
+    border: 2px solid #bde0fe;
+}
+
+
+.floating-text {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    color: white;
+    font-size: 4cqi;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px black;
+    pointer-events: none;
+    animation: float-up-fade-out 1.5s forwards;
+    z-index: 100;
+}
+
+.floating-text.level-up, .floating-text.wave-start {
+    color: #ffd700;
+    font-size: 7cqi;
+    animation: float-up-fade-out 2s forwards;
+}
+
+@keyframes float-up-fade-out {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -200%) scale(1.2); }
+}
+
+.floating-damage-text {
+    position: absolute;
+    font-size: 3.5cqi;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+    pointer-events: none;
+    animation: float-up-damage 1.2s forwards ease-out;
+    z-index: 101; /* Above floating skill text */
+}
+
+@keyframes float-up-damage {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+}
+
+.floating-damage-text.player-damage { color: #ff4d4d; }
+.floating-damage-text.enemy-damage { color: #ffffff; }
+.floating-damage-text.heal { color: #70e000; }
+.floating-damage-text.combo { color: #ffc300; font-style: italic; }
+
+/* Game Over Screen */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: linear-gradient(145deg, #1f4068, #162447);
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    width: 80%;
+    border: 2px solid #fca311;
+    transform: scale(0.5);
+    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    font-size: 6cqi;
+    color: #f9d923;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px #000;
+}
+
+.modal-content p {
+    font-size: 3.5cqi;
+    margin: 10px 0;
+}
+
+.modal-content button {
+    margin-top: 20px;
+    padding: 10px 30px;
+    font-size: 3.5cqi;
+    background-color: #fca311;
+    color: #10101a;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.modal-content button:hover {
+    background-color: #ffc300;
+}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "marked": "https://aistudiocdn.com/marked@^16.2.1",
+    "lit/": "https://aistudiocdn.com/lit@^3.3.1/",
+    "lit": "https://aistudiocdn.com/lit@^3.3.1",
+    "highlight.js": "https://aistudiocdn.com/highlight.js@^11.11.1",
+    "marked-highlight": "https://aistudiocdn.com/marked-highlight@^2.2.2"
+  }
+}
+</script>
+</head>
+<body>
+<div class="game-wrapper">
+    <div id="test-mode-indicator">[測試模式]</div>
+    <div id="effect-overlay"></div>
+    <div class="info-panel">
+        <div class="battle-scene" id="battle-scene">
+            <div class="score-display">
+                <span class="label">波次: <span id="wave">1</span></span>
+                <span class="label">等級: <span id="level">1</span></span>
+                <div id="xp-bar-container"><div id="xp-bar"></div></div>
+                <span class="label">分數: <span id="score">0</span></span>
+            </div>
+            <div class="team player-team">
+                <div class="character-slot" data-id="C"><div class="char-icon" style="background-color: #9d4edd;">C</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div><div class="status-bar"><div class="mp-bar" style="width: 0%;"></div></div></div>
+                <div class="character-slot" data-id="D"><div class="char-icon" style="background-color: #70e000;">D</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div><div class="status-bar"><div class="mp-bar" style="width: 0%;"></div></div></div>
+                <div class="character-slot" data-id="E"><div class="char-icon" style="background-color: #fca311;">E</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div><div class="status-bar"><div class="mp-bar" style="width: 0%;"></div></div></div>
+                <div class="character-slot" data-id="A"><div class="char-icon" style="background-color: #d90429;">A</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div><div class="status-bar"><div class="mp-bar" style="width: 0%;"></div></div></div>
+                <div class="character-slot" data-id="B"><div class="char-icon" style="background-color: #0077b6;">B</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div><div class="status-bar"><div class="mp-bar" style="width: 0%;"></div></div></div>
+            </div>
+            <div class="team enemy-team">
+                <div class="character-slot" data-id="c"><div class="char-icon" style="background-color: #9d4edd;">c</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div></div>
+                <div class="character-slot" data-id="d"><div class="char-icon" style="background-color: #70e000;">d</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div></div>
+                <div class="character-slot" data-id="e"><div class="char-icon" style="background-color: #fca311;">e</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div></div>
+                <div class="character-slot" data-id="a"><div class="char-icon" style="background-color: #d90429;">a</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div></div>
+                <div class="character-slot" data-id="b"><div class="char-icon" style="background-color: #0077b6;">b</div><div class="status-bar"><div class="hp-bar" style="width: 100%;"></div></div></div>
+            </div>
+        </div>
+        <div class="countdown-bar">
+            <span>回合倒數</span>
+            <div id="timer-bar"></div>
+        </div>
+        <div class="props-bar">
+            <div class="prop-slot"></div><div class="prop-slot"></div><div class="prop-slot"></div><div class="prop-slot"></div>
+            <div class="prop-slot"></div><div class="prop-slot"></div><div class="prop-slot"></div><div class="prop-slot"></div>
+        </div>
+    </div>
+    <div class="gameplay-panel">
+        <div class="board-container">
+            <div id="combo-display"></div>
+            <div id="game-board"></div>
+        </div>
+    </div>
+    <div id="game-over-screen" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">遊戲結束</h2>
+            <p>最高波次: <span id="final-wave">1</span></p>
+            <p>最終分數: <span id="final-score">0</span></p>
+            <button id="restart-button">重新開始</button>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 音效管理器 ---
+    const AudioManager = {
+        audioCtx: null,
+        initialize() {
+            if (!this.audioCtx) {
+                try {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser");
+                }
+            }
+        },
+        playSound({ type = 'sine', frequency = 440, duration = 0.1, volume = 0.5, attack = 0.01, decay = 0.05 }) {
+            if (!this.audioCtx) return;
+            const oscillator = this.audioCtx.createOscillator();
+            const gainNode = this.audioCtx.createGain();
+            const now = this.audioCtx.currentTime;
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, now);
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(volume, now + attack);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration - decay);
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioCtx.destination);
+            oscillator.start(now);
+            oscillator.stop(now + duration);
+        },
+        playSelect() { this.playSound({ frequency: 600, duration: 0.1, volume: 0.3, type: 'triangle' }); },
+        playSwap() {
+            this.playSound({ frequency: 440, duration: 0.15, volume: 0.4, type: 'square' });
+            setTimeout(() => this.playSound({ frequency: 550, duration: 0.1, volume: 0.4, type: 'square' }), 50);
+        },
+        playMatch(combo = 1) {
+            const baseFreq = 523.25; // C5
+            this.playSound({ frequency: baseFreq * Math.pow(1.05, combo), duration: 0.2, volume: 0.5, type: 'sine' });
+        },
+        playSpecial() {
+            this.playSound({ frequency: 880, duration: 0.4, volume: 0.7, type: 'sawtooth', decay: 0.2 });
+            setTimeout(() => this.playSound({ frequency: 1100, duration: 0.3, volume: 0.6, type: 'sawtooth', decay: 0.15 }), 100);
+        },
+        playUltimate() {
+            this.playSound({ frequency: 1200, duration: 0.6, volume: 0.8, type: 'sawtooth', decay: 0.4 });
+            setTimeout(() => this.playSound({ frequency: 1500, duration: 0.4, volume: 0.7, type: 'sawtooth', decay: 0.3 }), 150);
+        },
+        playAttack() { this.playSound({ type: 'square', frequency: 300, duration: 0.2, volume: 0.6, decay: 0.1 }); },
+        playDamage() { this.playSound({ type: 'sawtooth', frequency: 200, duration: 0.3, volume: 0.8, decay: 0.2 }); },
+        playHit() { this.playSound({ type: 'triangle', frequency: 700, duration: 0.15, volume: 0.5, decay: 0.1 }); },
+        playHeal() { this.playSound({type: 'sine', frequency: 659, duration: 0.5, volume: 0.6, decay: 0.4}); },
+        playDebuff() { this.playSound({type: 'square', frequency: 150, duration: 0.5, volume: 0.5, decay: 0.4}); },
+        playBurn() { this.playSound({type: 'sawtooth', frequency: 100, duration: 0.2, volume: 0.4, decay: 0.15}); },
+        playLevelUp() {
+            this.playSound({ type: 'sine', frequency: 523, duration: 0.2, volume: 0.6});
+            setTimeout(() => this.playSound({ type: 'sine', frequency: 784, duration: 0.2, volume: 0.6}), 150);
+            setTimeout(() => this.playSound({ type: 'sine', frequency: 1046, duration: 0.4, volume: 0.7}), 300);
+        },
+        playGameOver() { this.playSound({ type: 'sawtooth', frequency: 220, duration: 1, volume: 0.8, decay: 0.8 }); },
+        playVictory() {
+            this.playSound({ type: 'sine', frequency: 523, duration: 0.2, volume: 0.6});
+            setTimeout(() => this.playSound({ type: 'sine', frequency: 659, duration: 0.2, volume: 0.6}), 200);
+            setTimeout(() => this.playSound({ type: 'sine', frequency: 784, duration: 0.4, volume: 0.7}), 400);
+        }
+    };
+
+    // --- 遊戲設定 ---
+    const COLS = 8;
+    const ROWS = 10;
+    const RUNE_TYPES = 5;
+    const ROUND_TIME = 10;
+    const INITIAL_BASE_DAMAGE_PER_RUNE = 5;
+    const INITIAL_ENEMY_BASE_DAMAGE = 10;
+    let BASE_DAMAGE_PER_RUNE = INITIAL_BASE_DAMAGE_PER_RUNE;
+    let ENEMY_BASE_DAMAGE = INITIAL_ENEMY_BASE_DAMAGE;
+    let BURNING_DAMAGE = 5;
+    let BURNING_SPREAD_CHANCE = 0.3;
+    const XP_PER_RUNE = 2;
+    const MP_PER_RUNE = 8;
+    const COMBO_DAMAGE_BONUS = 0.2; // 20% bonus per combo level
+
+    // --- 符文類型定義 ---
+    const RUNE_NORMAL = 'normal';
+    const RUNE_STRIPED_H = 'striped_h';
+    const RUNE_STRIPED_V = 'striped_v';
+    const RUNE_BOMB = 'bomb';
+    const RUNE_COLOR_BOMB = 'color_bomb';
+
+    // --- 遊戲變數 ---
+    let board = [];
+    let selectedRune = null;
+    let score = 0;
+    let isSwapping = false;
+    let roundTimer;
+    let playerTurnTimerStarted = false;
+    let players = [];
+    let enemies = [];
+    let logCounter = 1;
+    let comboCounter = 0;
+    let frozenRuneColor = null;
+    let playerLevel = 1;
+    let playerXP = 0;
+    let xpToNextLevel = 100;
+    let currentWave = 1;
+
+    // --- 測試模式變數 ---
+    let testModeActive = false;
+    let lastTKeyPressTime = 0;
+    let lastClickedRunePos = { r: null, c: null };
+
+    // --- DOM 元素 ---
+    const gameBoardElement = document.getElementById('game-board');
+    const scoreElement = document.getElementById('score');
+    const timerBarElement = document.getElementById('timer-bar');
+    const testModeIndicator = document.getElementById('test-mode-indicator');
+    const gameWrapper = document.querySelector('.game-wrapper');
+    const battleSceneElement = document.getElementById('battle-scene');
+    const effectOverlay = document.getElementById('effect-overlay');
+    const levelElement = document.getElementById('level');
+    const waveElement = document.getElementById('wave');
+    const xpBarElement = document.getElementById('xp-bar');
+    const comboDisplayElement = document.getElementById('combo-display');
+    const gameOverScreenElement = document.getElementById('game-over-screen');
+
+    // --- 日誌系統 ---
+    function logStep(message) {
+        console.log(`[${logCounter++}] ${message}`);
+    }
+
+    // --- 遊戲初始化 ---
+    function initializeGame() {
+        logStep("遊戲初始化開始...");
+        initializeCharacters();
+        initializeBoard();
+        updateAllCharacterUI();
+        prepareNextPlayerTurn();
+        setupEventListeners();
+        logStep("遊戲初始化完成!");
+    }
+
+    // --- 角色數據初始化 ---
+    function initializeCharacters() {
+        const characterSlots = document.querySelectorAll('.character-slot');
+        players = [];
+        enemies = [];
+
+        const PLAYER_SKILLS = {
+            'A': { name: '重擊', execute: playerSkillSingleTarget, ultimate: {name: '煉獄火海', execute: playerUltimate_FieryRage} },
+            'B': { name: '水之治癒', execute: playerSkillHealLowest, ultimate: {name: '絕對零度', execute: playerUltimate_FreezeAll} },
+            'C': { name: '暗影穿刺', execute: playerSkillAoeDamage, ultimate: {name: '暗影奇襲', execute: playerUltimate_ExecuteLowest} },
+            'D': { name: '藤蔓鞭笞', execute: playerSkillSingleTargetDebuff, ultimate: {name: '自然祝福', execute: playerUltimate_CleanseAndHeal} },
+            'E': { name: '神聖之光', execute: playerSkillAoeHeal, ultimate: {name: '雷神之怒', execute: playerUltimate_CreateBombs} }
+        };
+        const ENEMY_SKILLS = {
+            'a': { name: '火焰風暴', icon: '🔥', execute: enemyCastFire },
+            'b': { name: '群體打擊', icon: '💥', execute: enemyCastGroupAttack },
+            'c': { name: '冰凍術', icon: '🧊', execute: enemyCastFreeze },
+            'd': { name: '重擊', icon: '💥', execute: enemyCastGroupAttack },
+            'e': { name: '穿刺', icon: '🧊', execute: enemyCastFreeze }
+        };
+
+        characterSlots.forEach(slot => {
+            const id = slot.dataset.id;
+            const isPlayer = id === id.toUpperCase();
+            const characterData = {
+                id: id, hp: 100, maxHp: 100, baseMaxHp: 100,
+                mp: 0, maxMp: 100,
+                element: slot,
+                status: {},
+                rank: 'normal',
+                colorIndex: isPlayer ? 'ABDEC'.indexOf(id) : 'abdec'.indexOf(id.toLowerCase()),
+                skill: isPlayer ? PLAYER_SKILLS[id] : ENEMY_SKILLS[id]
+            };
+            if (isPlayer) {
+                players.push(characterData);
+            } else {
+                characterData.skillCooldown = Math.floor(Math.random() * 2) + 1;
+                enemies.push(characterData);
+            }
+        });
+        updateAllCharacterUI();
+    }
+
+    function updateAllCharacterUI() {
+        [...players, ...enemies].forEach(char => updateCharacterUI(char.id));
+    }
+
+    function updateCharacterUI(characterId) {
+        const character = [...players, ...enemies].find(c => c.id === characterId);
+        if (!character || !character.element) return;
+        
+        const hpPercentage = (character.hp / character.maxHp) * 100;
+        const hpBar = character.element.querySelector('.hp-bar');
+        if (hpBar) hpBar.style.width = `${hpPercentage}%`;
+
+        const icon = character.element.querySelector('.char-icon');
+        if (icon) icon.classList.toggle('dead', character.hp <= 0);
+
+        if (character.mp !== undefined) {
+            const mpPercentage = (character.mp / character.maxMp) * 100;
+            const mpBar = character.element.querySelector('.mp-bar');
+            if (mpBar) mpBar.style.width = `${mpPercentage}%`;
+            if (icon) icon.classList.toggle('ultimate-ready', character.mp >= character.maxMp);
+        }
+
+        // Rank icons
+        let rankIcon = character.element.querySelector('.rank-icon');
+        if (character.rank !== 'normal') {
+            if (!rankIcon) {
+                rankIcon = document.createElement('div');
+                rankIcon.className = 'rank-icon';
+                icon?.prepend(rankIcon);
+            }
+            rankIcon.textContent = character.rank === 'boss' ? '💀' : '⭐';
+        } else if (rankIcon) {
+            rankIcon.remove();
+        }
+
+        // Boss mechanics display
+        let bossMechanicDisplay = character.element.querySelector('.boss-mechanic-display');
+        if (character.rank === 'boss' && character.shieldHp > 0) {
+            if (!bossMechanicDisplay) {
+                bossMechanicDisplay = document.createElement('div');
+                bossMechanicDisplay.className = 'boss-mechanic-display';
+                icon?.appendChild(bossMechanicDisplay);
+            }
+            bossMechanicDisplay.innerHTML = `<span class="rune-${character.shieldColor}" style="width: 2cqi; height: 2cqi; border-radius: 50%; display: inline-block;"></span> ${character.shieldHp}`;
+        } else if (bossMechanicDisplay) {
+            bossMechanicDisplay.remove();
+        }
+    }
+
+
+    function updatePlayerUI() {
+        if (scoreElement) scoreElement.textContent = Math.round(score);
+        if (waveElement) waveElement.textContent = currentWave;
+        if (levelElement) levelElement.textContent = playerLevel;
+        if (xpBarElement) {
+            const xpPercentage = (playerXP / xpToNextLevel) * 100;
+            xpBarElement.style.width = `${xpPercentage}%`;
+        }
+    }
+
+    // --- 棋盤初始化 ---
+    function initializeBoard() {
+        logStep("正在初始化棋盤...");
+        board = [];
+        for (let r = 0; r < ROWS; r++) {
+            board[r] = [];
+            for (let c = 0; c < COLS; c++) {
+                board[r][c] = { color: generateSafeColor(r, c), type: RUNE_NORMAL, status: {} };
+            }
+        }
+        renderBoard(false);
+        logStep("棋盤渲染完成。");
+    }
+
+    function generateSafeColor(r, c, tempBoard = board) {
+        let randomColor;
+        const BANNED_COLORS = [];
+        if (tempBoard[r]) {
+            if (c >= 2 && tempBoard[r][c - 1]?.color === tempBoard[r][c - 2]?.color) {
+                BANNED_COLORS.push(tempBoard[r][c - 1].color);
+            }
+        }
+        if (r >= 2 && tempBoard[r - 1] && tempBoard[r - 2]) {
+            if (tempBoard[r - 1][c]?.color === tempBoard[r - 2][c]?.color) {
+                BANNED_COLORS.push(tempBoard[r - 1][c].color);
+            }
+        }
+        do {
+            randomColor = Math.floor(Math.random() * RUNE_TYPES);
+        } while (BANNED_COLORS.includes(randomColor));
+        return randomColor;
+    }
+
+    // --- 回合計時器 ---
+    function startRoundTimer() {
+        if (testModeActive || playerTurnTimerStarted) return;
+        playerTurnTimerStarted = true;
+        logStep("玩家回合計時器啟動!");
+        clearInterval(roundTimer);
+        if (timerBarElement) {
+            timerBarElement.style.transition = 'none';
+            timerBarElement.style.width = '100%';
+            setTimeout(() => {
+                if (timerBarElement) {
+                    timerBarElement.style.transition = `width ${ROUND_TIME}s linear`;
+                    timerBarElement.style.width = '0%';
+                }
+            }, 50);
+        }
+        roundTimer = setTimeout(enemyTurn, ROUND_TIME * 1000);
+        
+        setTimeout(() => {
+            const countdownBar = document.querySelector('.countdown-bar');
+            if (countdownBar && playerTurnTimerStarted) {
+                countdownBar.classList.add('urgent');
+            }
+        }, (ROUND_TIME - 2) * 1000);
+    }
+
+    async function prepareNextPlayerTurn() {
+        logStep("準備玩家下一回合...");
+        isSwapping = false;
+        playerTurnTimerStarted = false;
+        clearInterval(roundTimer);
+        document.querySelector('.countdown-bar')?.classList.remove('urgent');
+        if(gameBoardElement) gameBoardElement.style.pointerEvents = 'auto';
+
+        if (timerBarElement) {
+            timerBarElement.style.transition = 'none';
+            timerBarElement.style.width = '100%';
+        }
+        
+        renderEnemyIntents();
+        await handleBurningEffects();
+
+        let needsRender = false;
+        let hasFrozenRunes = false;
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const rune = board[r]?.[c];
+                if (rune?.status?.frozen > 0) {
+                    rune.status.frozen--;
+                    needsRender = true;
+                     if (rune.status.frozen > 0) {
+                        hasFrozenRunes = true;
+                     }
+                }
+            }
+        }
+        if (!hasFrozenRunes) {
+            frozenRuneColor = null;
+        }
+        if (needsRender) {
+            renderBoard(false);
+        }
+    }
+
+    // --- 渲染棋盤 ---
+    function renderBoard(isAnimating = false) {
+        if (!gameBoardElement) return;
+        gameBoardElement.innerHTML = '';
+        for (let r = 0; r < ROWS; r++) {
+            if (!board[r]) continue;
+            for (let c = 0; c < COLS; c++) {
+                if (!board[r][c]) continue;
+                const runeData = board[r][c];
+                const rune = document.createElement('div');
+                rune.dataset.row = r;
+                rune.dataset.col = c;
+                rune.dataset.id = `${r}-${c}`;
+
+                rune.classList.add('rune');
+                if (runeData.type === RUNE_COLOR_BOMB) {
+                    rune.style.background = 'radial-gradient(circle, #ffffff, #d3d3d3)';
+                } else {
+                    rune.classList.add(`rune-${runeData.color}`);
+                }
+                
+                if (runeData.burning) {
+                    rune.classList.add('burning');
+                    const fireIcon = document.createElement('div');
+                    fireIcon.className = 'rune-status-icon';
+                    fireIcon.textContent = '🔥';
+                    rune.appendChild(fireIcon);
+                }
+                if (runeData.status?.frozen > 0) {
+                    rune.classList.add('frozen');
+                    const iceIcon = document.createElement('div');
+                    iceIcon.className = 'rune-status-icon';
+                    iceIcon.textContent = '🧊';
+                    rune.appendChild(iceIcon);
+                }
+
+                if (!isAnimating) {
+                    rune.addEventListener('pointerdown', onRunePointerDown);
+                }
+
+                const debugSpan = document.createElement('span');
+                debugSpan.classList.add('rune-debug-info');
+                let debugText = '';
+                const colors = ['R', 'B', 'G', 'Y', 'P'];
+
+                switch (runeData.type) {
+                    case RUNE_NORMAL: debugText += `${colors[runeData.color]},${r},${c}`; break;
+                    case RUNE_STRIPED_H: debugText += `1A,${colors[runeData.color]},${r},${c}`; break;
+                    case RUNE_STRIPED_V: debugText += `1B,${colors[runeData.color]},${r},${c}`; break;
+                    case RUNE_BOMB: debugText += `2,${colors[runeData.color]},${r},${c}`; break;
+                    case RUNE_COLOR_BOMB: debugText += `3A,${r},${c}`; break;
+                }
+                debugSpan.textContent = debugText;
+                rune.appendChild(debugSpan);
+
+                if (runeData.type !== RUNE_NORMAL) {
+                    const icon = document.createElement('img');
+                    icon.classList.add('special-icon');
+                    if (runeData.type === RUNE_BOMB) {
+                        icon.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 28 28' fill='white'%3E%3Cpath d='M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E`;
+                    } else if (runeData.type === RUNE_STRIPED_H) {
+                        icon.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M3 11h18v2H3zM3 7h18v2H3zM3 15h18v2H3z' stroke='black' stroke-width='0.5'/%3E%3C/svg%3E`;
+                    } else if (runeData.type === RUNE_STRIPED_V) {
+                        icon.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M11 3h2v18h-2zM7 3h2v18H7zM15 3h2v18h-2z' stroke='black' stroke-width='0.5'/%3E%3C/svg%3E`;
+                    } else if (runeData.type === RUNE_COLOR_BOMB) {
+                        icon.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3CradialGradient id='grad'%3E%3Cstop offset='0%25' stop-color='%23ff0000'/%3E%3Cstop offset='20%25' stop-color='%23ff7f00'/%3E%3Cstop offset='40%25' stop-color='%23ffff00'/%3E%3Cstop offset='60%25' stop-color='%2300ff00'/%3E%3Cstop offset='80%25' stop-color='%230000ff'/%3E%3Cstop offset='100%25' stop-color='%238b00ff'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='10' fill='url(%23grad)' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E`;
+                    }
+                    rune.appendChild(icon);
+                }
+                gameBoardElement.appendChild(rune);
+            }
+        }
+    }
+
+    // --- 統一的指針事件處理 ---
+    function onRunePointerDown(event) {
+        AudioManager.initialize();
+        if (isSwapping || event.currentTarget.classList.contains('frozen')) return;
+        event.preventDefault();
+        const target = event.currentTarget;
+        const r = parseInt(target.dataset.row);
+        const c = parseInt(target.dataset.col);
+        lastClickedRunePos = { r, c };
+
+        if (selectedRune) {
+            document.querySelectorAll('.rune.selected').forEach(el => el.classList.remove('selected'));
+            const r2 = selectedRune.r;
+            const c2 = selectedRune.c;
+            const isAdjacent = Math.abs(r - r2) + Math.abs(c - c2) === 1;
+            selectedRune = null;
+            if (isAdjacent && !(r === r2 && c === c2)) {
+                swapRunes(r, c, r2, c2);
+            }
+        } else {
+            AudioManager.playSelect();
+            logStep(`選擇/開始拖拽符文於(${r},${c})`);
+            selectedRune = { r, c };
+            target.classList.add('selected');
+
+            const onPointerMove = (moveEvent) => {
+                const elem = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+                if (elem && elem.classList.contains('rune') && !elem.classList.contains('frozen') && elem !== target) {
+                    const moveR = parseInt(elem.dataset.row);
+                    const moveC = parseInt(elem.dataset.col);
+                    if (selectedRune) {
+                        const isAdjacent = Math.abs(r - moveR) + Math.abs(c - moveC) === 1;
+                        if (isAdjacent) {
+                            cleanUpPointerListeners();
+                            swapRunes(r, c, moveR, moveC);
+                        }
+                    }
+                }
+            };
+
+            const onPointerUp = () => {
+                cleanUpPointerListeners();
+            };
+
+            const cleanUpPointerListeners = () => {
+                if (selectedRune && !target.classList.contains('selected')) {
+                    selectedRune = null;
+                }
+                window.removeEventListener('pointermove', onPointerMove);
+                window.removeEventListener('pointerup', onPointerUp);
+            };
+            
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+        }
+    }
+
+    // --- 交換符文 ---
+    async function swapRunes(r1, c1, r2, c2) {
+        if (isSwapping) return;
+        AudioManager.playSwap();
+        logStep(`嘗試交換(${r1},${c1})與(${r2},${c2})`);
+        isSwapping = true;
+        selectedRune = null;
+        document.querySelectorAll('.rune.selected').forEach(el => el.classList.remove('selected'));
+
+        const rune1_before = board[r1]?.[c1];
+        const rune2_before = board[r2]?.[c2];
+
+        if (!rune1_before || !rune2_before) {
+            isSwapping = false;
+            return;
+        }
+
+        const isRune1Special = rune1_before.type !== RUNE_NORMAL;
+        const isRune2Special = rune2_before.type !== RUNE_NORMAL;
+
+        [board[r1][c1], board[r2][c2]] = [board[r2][c2], board[r1][c1]];
+        renderBoard(true);
+        await sleep(200);
+        
+        let moveIsValid = false;
+
+        if (isRune1Special && isRune2Special) {
+            moveIsValid = true;
+            startRoundTimer();
+            await handleSpecialCombination(r1, c1, r2, c2, rune1_before, rune2_before);
+        } else if (rune1_before.type === RUNE_COLOR_BOMB || rune2_before.type === RUNE_COLOR_BOMB) {
+            moveIsValid = true;
+            startRoundTimer();
+            const colorBombPos = rune1_before.type === RUNE_COLOR_BOMB ? {r:r2, c:c2} : {r:r1, c:c1};
+            const otherRuneColor = rune1_before.type === RUNE_COLOR_BOMB ? rune2_before.color : rune1_before.color;
+            await handleColorBombActivation(colorBombPos, otherRuneColor);
+        } else {
+            let matchInfo = findMatchGroups();
+            if (matchInfo.groups.length > 0) {
+                moveIsValid = true;
+                startRoundTimer();
+                await handleMatchGroups(matchInfo, { r: r2, c: c2 });
+            }
+        }
+        
+        if (!moveIsValid) {
+            logStep("無效交換,換回原位。");
+            [board[r1][c1], board[r2][c2]] = [rune1_before, rune2_before];
+            renderBoard(false);
+            await sleep(200);
+            isSwapping = false;
+        } else {
+            await cascadeMatches();
+        }
+    }
+    
+    async function cascadeMatches() {
+        if (isSwapping && !playerTurnTimerStarted) isSwapping = false; // allow next cascade
+        comboCounter++;
+        if (comboCounter > 1) showComboText(comboCounter);
+        let matchInfo = findMatchGroups();
+        if (matchInfo.groups.length > 0) {
+            logStep(`檢測到連鎖反應! Combo: ${comboCounter}`);
+            await handleMatchGroups(matchInfo, null);
+            await cascadeMatches();
+        } else {
+            comboCounter = 0;
+            hideComboText();
+            isSwapping = false;
+            if (playerTurnTimerStarted) {
+                // Turn continues
+            } else {
+                 prepareNextPlayerTurn();
+            }
+        }
+    }
+
+
+    // --- 尋找匹配組 (Robust Version) ---
+    function findMatchGroups(currentBoard = board) {
+        const groups = [];
+        const getRune = (r, c) => (r >= 0 && r < ROWS && c >= 0 && c < COLS && currentBoard[r]) ? currentBoard[r][c] : null;
+    
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; ) {
+                const startRune = getRune(r, c);
+                if (!startRune || startRune.type === RUNE_COLOR_BOMB) { c++; continue; }
+                
+                let match = [{ r, c }];
+                let nc = c + 1;
+                while (nc < COLS && getRune(r, nc)?.color === startRune.color && getRune(r, nc)?.type !== RUNE_COLOR_BOMB) {
+                    match.push({ r, c: nc });
+                    nc++;
+                }
+                if (match.length >= 3) groups.push({ runes: match, direction: 'horizontal' });
+                c = nc;
+            }
+        }
+    
+        for (let c = 0; c < COLS; c++) {
+            for (let r = 0; r < ROWS; ) {
+                const startRune = getRune(r, c);
+                if (!startRune || startRune.type === RUNE_COLOR_BOMB) { r++; continue; }
+                
+                let match = [{ r, c }];
+                let nr = r + 1;
+                while (nr < ROWS && getRune(nr, c)?.color === startRune.color && getRune(nr, c)?.type !== RUNE_COLOR_BOMB) {
+                    match.push({ r: nr, c });
+                    nr++;
+                }
+                if (match.length >= 3) groups.push({ runes: match, direction: 'vertical' });
+                r = nr;
+            }
+        }
+    
+        if (groups.length > 0) logStep(`找到 ${groups.length} 組匹配。`);
+        return { groups };
+    }
+
+
+    // --- 處理匹配組 ---
+    async function handleMatchGroups(matchInfo, swapPoint) {
+        const allMatchedRunes = new Set();
+        matchInfo.groups.forEach(group => group.runes.forEach(p => allMatchedRunes.add(`${p.r},${p.c}`)));
+        
+        const runesByColor = {};
+        allMatchedRunes.forEach(coordStr => {
+            const [r, c] = coordStr.split(',').map(Number);
+            const rune = board[r]?.[c];
+            if (rune && rune.color !== undefined) {
+                if (!runesByColor[rune.color]) runesByColor[rune.color] = 0;
+                runesByColor[rune.color]++;
+            }
+        });
+
+        // Handle boss shield mechanic
+        const boss = enemies.find(e => e.rank === 'boss' && e.hp > 0);
+        if (boss && boss.shieldHp > 0 && runesByColor[boss.shieldColor]) {
+            const shieldDamage = runesByColor[boss.shieldColor];
+            boss.shieldHp = Math.max(0, boss.shieldHp - shieldDamage);
+            logStep(`對 Boss 護盾造成 ${shieldDamage} 點傷害, 剩餘 ${boss.shieldHp}`);
+            updateCharacterUI(boss.id);
+            if (boss.shieldHp === 0) {
+                logStep("Boss 護盾被打破! Boss 暈眩!");
+                boss.status.stunned = 2; // Stun for 1 enemy turn (2 player turns)
+                triggerScreenShake();
+            }
+        }
+
+        matchInfo.groups.forEach(group => {
+            if (group.runes.length > 0) {
+                const firstRunePos = group.runes[0];
+                const runeData = board[firstRunePos.r]?.[firstRunePos.c];
+                if (runeData) {
+                    const player = players.find(p => p.colorIndex === runeData.color);
+                    if (player && player.hp > 0) {
+                        if (group.runes.length > 3) {
+                            triggerPlayerSkill(player, group.runes.length);
+                        } else {
+                            const livingEnemies = enemies.filter(e => e.hp > 0);
+                            if (livingEnemies.length > 0) {
+                                const target = livingEnemies[Math.floor(Math.random() * livingEnemies.length)];
+                                applyDamageToEnemy(target, group.runes.length * BASE_DAMAGE_PER_RUNE);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        const specialRunesToCreate = [];
+        const handledCreationCoords = new Set();
+        const getCreationPos = (group, swapPoint) => {
+            if (swapPoint && group.runes.some(p => p.r === swapPoint.r && p.c === swapPoint.c)) {
+                return swapPoint;
+            }
+            return group.runes[Math.floor(group.runes.length / 2)];
+        };
+
+        const runeToGroups = new Map();
+        matchInfo.groups.forEach((group, index) => {
+            group.runes.forEach(p => {
+                const key = `${p.r},${p.c}`;
+                if (!runeToGroups.has(key)) runeToGroups.set(key, []);
+                runeToGroups.get(key).push(index);
+            });
+        });
+
+        for (const [key, groupIndices] of runeToGroups.entries()) {
+            if (groupIndices.length > 1 && !handledCreationCoords.has(key)) {
+                const [r, c] = key.split(',').map(Number);
+                const sourceRune = board[r]?.[c];
+                if (sourceRune) {
+                    specialRunesToCreate.push({ pos: {r, c}, type: RUNE_BOMB, color: sourceRune.color });
+                    handledCreationCoords.add(key);
+                }
+            }
+        }
+
+        matchInfo.groups.forEach(group => {
+            const creationPos = getCreationPos(group, swapPoint);
+            const key = `${creationPos.r},${creationPos.c}`;
+
+            if (handledCreationCoords.has(key)) return;
+
+            if (group.runes.length >= 5) {
+                specialRunesToCreate.push({ pos: creationPos, type: RUNE_COLOR_BOMB, color: undefined });
+                handledCreationCoords.add(key);
+            } else if (group.runes.length === 4) {
+                const sourceRune = board[creationPos.r]?.[creationPos.c];
+                if (sourceRune) {
+                    const newType = group.direction === 'horizontal' ? RUNE_STRIPED_H : RUNE_STRIPED_V;
+                    specialRunesToCreate.push({ pos: creationPos, type: newType, color: sourceRune.color });
+                    handledCreationCoords.add(key);
+                }
+            }
+        });
+        
+        specialRunesToCreate.forEach(special => {
+             logStep(`生成 ${special.type} 於 (${special.pos.r},${special.pos.c})`);
+             board[special.pos.r][special.pos.c] = { color: special.color, type: special.type, status: {} };
+             allMatchedRunes.delete(`${special.pos.r},${special.pos.c}`);
+        });
+
+        const destroyedCoords = Array.from(allMatchedRunes).map(s => s.split(',').map(Number));
+        await destroyRunes(destroyedCoords, true);
+    }
+    
+    // --- 處理特殊組合 ---
+    async function handleSpecialCombination(r1, c1, r2, c2, rune1, rune2) {
+        AudioManager.playSpecial();
+        logStep(`觸發組合技: ${rune1.type} + ${rune2.type}`);
+        
+        const originR = r1, originC = c1; 
+        const runesToDestroyCoords = new Set([`${r1},${c1}`, `${r2},${c2}`]);
+        const types = [rune1.type, rune2.type].sort();
+
+        if (types.includes(RUNE_COLOR_BOMB)) {
+            const otherRune = (rune1.type === RUNE_COLOR_BOMB) ? rune2 : rune1;
+            triggerScreenShake();
+            if (otherRune.type === RUNE_COLOR_BOMB) {
+                logStep("組合技: 全畫面清除!");
+                for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++) runesToDestroyCoords.add(`${r},${c}`);
+            } 
+            else if (otherRune.type === RUNE_STRIPED_H || otherRune.type === RUNE_STRIPED_V) {
+                logStep("組合技: 全體變換並引爆!");
+                const colorToChange = otherRune.color;
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                       if (board[r]?.[c]?.color === colorToChange) {
+                           board[r][c].type = (Math.random() > 0.5) ? RUNE_STRIPED_H : RUNE_STRIPED_V;
+                           runesToDestroyCoords.add(`${r},${c}`);
+                       }
+                   }
+               }
+            }
+            else if (otherRune.type === RUNE_BOMB) {
+                logStep("組合技: 全體顏色引爆!");
+                const colorToClear = otherRune.color;
+                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+                    if (board[r]?.[c]?.color === colorToClear) {
+                        runesToDestroyCoords.add(`${r},${c}`);
+                    }
+                }
+                runesToDestroyCoords.forEach(coord => {
+                    const [r, c] = coord.split(',').map(Number);
+                    if (board[r]?.[c]) board[r][c].type = RUNE_BOMB;
+                });
+            }
+        } 
+        else if (types.every(t => t === RUNE_BOMB)) {
+            logStep("組合技: 巨大爆炸!");
+            triggerScreenShake();
+            const midR = Math.round((r1+r2)/2), midC = Math.round((c1+c2)/2);
+            for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+                const nr = midR + i, nc = midC + j;
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) runesToDestroyCoords.add(`${nr},${nc}`);
+            }
+        }
+        else if (types.includes(RUNE_BOMB) && (types.includes(RUNE_STRIPED_H) || types.includes(RUNE_STRIPED_V))) {
+            logStep("組合技: 十字巨大爆炸!");
+            triggerScreenShake();
+            const effectOrigin = rune1.type === RUNE_BOMB ? {r:r1, c:c1} : {r:r2, c:c2};
+            for(let i of [effectOrigin.r - 1, effectOrigin.r, effectOrigin.r + 1]) {
+                if(i >=0 && i < ROWS) for (let j = 0; j < COLS; j++) runesToDestroyCoords.add(`${i},${j}`);
+            }
+            for(let i of [effectOrigin.c - 1, effectOrigin.c, effectOrigin.c + 1]) {
+                if(i >=0 && i < COLS) for (let j = 0; j < ROWS; j++) runesToDestroyCoords.add(`${j},${i}`);
+            }
+        }
+        else if (types[0].startsWith('striped') && types[1].startsWith('striped')) {
+             logStep("組合技: 十字爆炸!");
+             for (let i = 0; i < COLS; i++) runesToDestroyCoords.add(`${originR},${i}`);
+             for (let i = 0; i < ROWS; i++) runesToDestroyCoords.add(`${i},${originC}`);
+        }
+        
+        const destroyedCoords = Array.from(runesToDestroyCoords).map(s => s.split(',').map(Number));
+        await destroyRunes(destroyedCoords, false);
+    }
+    
+    // --- 符文銷毀&掉落 ---
+    async function destroyRunes(coords, isNormalMatch) {
+        if (coords.length === 0) return;
+        
+        let finalCoordsToDestroy = new Set();
+        let coordsToProcess = coords.map(c => `${c[0]},${c[1]}`);
+        const processed = new Set();
+        const runesByColor = {};
+
+        while (coordsToProcess.length > 0) {
+            const coordStr = coordsToProcess.pop();
+            if (processed.has(coordStr)) continue;
+            processed.add(coordStr);
+            finalCoordsToDestroy.add(coordStr);
+
+            const [r, c] = coordStr.split(',').map(Number);
+            const runeData = board[r]?.[c];
+
+            if (runeData) {
+                if (runeData.color !== undefined) {
+                    if (!runesByColor[runeData.color]) runesByColor[runeData.color] = 0;
+                    runesByColor[runeData.color]++;
+                }
+                if(runeData.burning) delete runeData.burning;
+                if (runeData.type !== RUNE_NORMAL) {
+                    AudioManager.playSpecial();
+                    const effectCoords = getSpecialRuneEffectCoords(r, c);
+                    effectCoords.forEach(cStr => {
+                        if (!processed.has(cStr)) coordsToProcess.push(cStr);
+                    });
+                }
+            }
+        }
+
+        if (isNormalMatch) AudioManager.playMatch(comboCounter > 0 ? comboCounter : 1);
+        
+        const finalCoordsArray = Array.from(finalCoordsToDestroy).map(s => s.split(',').map(Number));
+        logStep(`總計 ${finalCoordsArray.length} 個符文將被銷毀。`);
+        
+        // Grant MP to players
+        if (playerTurnTimerStarted) {
+            for (const color in runesByColor) {
+                const player = players.find(p => p.colorIndex == color);
+                if (player && player.hp > 0) {
+                    player.mp = Math.min(player.maxMp, player.mp + runesByColor[color] * MP_PER_RUNE);
+                    updateCharacterUI(player.id);
+                }
+            }
+        }
+
+        if (playerTurnTimerStarted) { 
+           let damage = finalCoordsArray.length * BASE_DAMAGE_PER_RUNE * (isNormalMatch ? 1 : 0.7);
+           const livingEnemies = enemies.filter(e => e.hp > 0);
+           if (livingEnemies.length > 0) {
+              const target = livingEnemies[Math.floor(Math.random() * livingEnemies.length)];
+              applyDamageToEnemy(target, damage);
+           }
+        }
+        
+        updateScoreAndXP(finalCoordsArray.length);
+
+        for (const [r, c] of finalCoordsArray) {
+            if (board[r]?.[c]) {
+                const runeElement = document.querySelector(`#game-board [data-row='${r}'][data-col='${c}']`);
+                if (runeElement) runeElement.classList.add('matched');
+                board[r][c] = null;
+            }
+        }
+
+        await sleep(500);
+        await animateAndApplyDropsAndFills();
+    }
+    
+    function getSpecialRuneEffectCoords(r, c) {
+        const coords = new Set();
+        const runeData = board[r]?.[c];
+        if (!runeData) return coords;
+
+        if (runeData.type === RUNE_BOMB) {
+            for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+                const nr = r + i, nc = c + j;
+                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) coords.add(`${nr},${nc}`);
+            }
+        } else if (runeData.type === RUNE_STRIPED_H) {
+            for (let i = 0; i < COLS; i++) coords.add(`${r},${i}`);
+        } else if (runeData.type === RUNE_STRIPED_V) {
+            for (let i = 0; i < ROWS; i++) coords.add(`${i},${c}`);
+        } else if (runeData.type === RUNE_COLOR_BOMB) {
+            const colorsOnBoard = {};
+            for (let br = 0; br < ROWS; br++) for (let bc = 0; bc < COLS; bc++) {
+                if (board[br]?.[bc]?.type === RUNE_NORMAL) {
+                    colorsOnBoard[board[br][bc].color] = (colorsOnBoard[board[br][bc].color] || 0) + 1;
+                }
+            }
+            let maxCount = 0;
+            let colorToClear = -1;
+            for (const color in colorsOnBoard) {
+                if (colorsOnBoard[color] > maxCount) {
+                    maxCount = colorsOnBoard[color];
+                    colorToClear = parseInt(color);
+                }
+            }
+            if (colorToClear !== -1) {
+                logStep(`3號符文被動觸發,消除所有顏色為 ${colorToClear} 的符文。`);
+                for (let br = 0; br < ROWS; br++) for (let bc = 0; bc < COLS; bc++) {
+                    if (board[br]?.[bc]?.color === colorToClear) coords.add(`${br},${bc}`);
+                }
+            }
+        }
+        return coords;
+    }
+
+    // --- 敵人回合 ---
+    async function enemyTurn() {
+        if (testModeActive) return;
+        logStep("-------- 敵人回合開始 ----------");
+        isSwapping = true;
+        playerTurnTimerStarted = false;
+        clearInterval(roundTimer);
+        document.querySelector('.countdown-bar')?.classList.remove('urgent');
+        if(gameBoardElement) gameBoardElement.style.pointerEvents = 'none';
+
+        // Clear intents before new ones are calculated
+        renderEnemyIntents(true); 
+
+        let livingPlayers = players.filter(p => p.hp > 0);
+        const livingEnemies = enemies.filter(e => e.hp > 0);
+
+        if (livingEnemies.length === 0 || livingPlayers.length === 0) {
+            isSwapping = false;
+            if(livingPlayers.length > 0) prepareNextPlayerTurn();
+            return;
+        }
+
+        for (const attacker of livingEnemies) {
+            if (players.filter(p => p.hp > 0).length === 0) break;
+            
+            if (attacker.status?.stunned > 0) {
+                logStep(`敵人 ${attacker.id} 暈眩中, 跳過回合。`);
+                attacker.status.stunned--;
+                continue;
+            }
+
+            attacker.skillCooldown--;
+            const skillChanceIncrease = (currentWave - 1) * 0.1;
+            
+            if (attacker.skillCooldown <= 0 || Math.random() < skillChanceIncrease) {
+                logStep(`敵人 ${attacker.id} 施放技能: ${attacker.skill.name}`);
+                showFloatingText(attacker.skill.name, attacker.element);
+                const attackerIcon = attacker.element?.querySelector('.char-icon');
+                if(attackerIcon) attackerIcon.classList.add('casting-skill');
+                await sleep(500);
+                await attacker.skill.execute(attacker);
+                if(attackerIcon) attackerIcon.classList.remove('casting-skill');
+                attacker.skillCooldown = Math.floor(Math.random() * 3) + 2;
+            } else {
+                logStep(`敵人 ${attacker.id} 開始普通攻擊`);
+                const target = livingPlayers[Math.floor(Math.random() * livingPlayers.length)];
+                logStep(`\t -> 攻擊玩家 ${target.id}`);
+                
+                AudioManager.playAttack();
+                const attackerIcon = attacker.element?.querySelector('.char-icon');
+                if(attackerIcon) attackerIcon.classList.add('attacking');
+                await sleep(500);
+                if(attackerIcon) attackerIcon.classList.remove('attacking');
+
+                applyDamageToPlayer(target, ENEMY_BASE_DAMAGE);
+            }
+            
+            // Set up telegraph for next turn
+            if (attacker.skillCooldown === 1) {
+                attacker.telegraphingSkill = attacker.skill;
+            } else {
+                delete attacker.telegraphingSkill;
+            }
+
+            livingPlayers = players.filter(p => p.hp > 0);
+            await sleep(500);
+        }
+
+        logStep("---------- 敵人回合結束 ----------");
+        await cascadeMatches();
+    }
+    
+    function applyDamageToEnemy(target, damage) {
+        let finalDamage = damage;
+        
+        // Boss shield logic
+        if (target.rank === 'boss' && target.shieldHp > 0) {
+            finalDamage *= 0.1; // 90% damage reduction
+        } else if (target.status?.stunned > 0) {
+            finalDamage *= 2; // Double damage when stunned
+        }
+
+        let comboBonus = 0;
+        if (comboCounter > 1) {
+            comboBonus = finalDamage * (comboCounter - 1) * COMBO_DAMAGE_BONUS;
+            finalDamage += comboBonus;
+        }
+        finalDamage = Math.round(finalDamage);
+
+        target.hp = Math.max(0, target.hp - finalDamage);
+        AudioManager.playHit();
+        updateCharacterUI(target.id);
+        createFloatingText(`-${finalDamage}`, target.element, 'enemy-damage');
+        if (comboBonus > 0) {
+            createFloatingText(`+${Math.round(comboBonus)} 連擊!`, target.element, 'combo');
+        }
+
+        // Elite: Thorns
+        if (target.rank === 'elite' && target.modifiers?.includes('thorns')) {
+            const thornDamage = Math.max(1, Math.round(finalDamage * 0.2));
+            logStep(`精英敵人 ${target.id} 的荊棘反彈 ${thornDamage} 點傷害!`);
+            const randomPlayer = players.find(p => p.hp > 0);
+            if(randomPlayer) applyDamageToPlayer(randomPlayer, thornDamage);
+        }
+
+        const icon = target.element?.querySelector('.char-icon');
+        if (icon) {
+            icon.classList.add('damaged');
+            setTimeout(() => icon.classList.remove('damaged'), 300);
+        }
+        if (target.hp === 0) {
+            logStep(`敵人 ${target.id} 已被擊敗!`);
+            if (enemies.every(e => e.hp === 0)) {
+                logStep("所有敵人都已被擊敗!準備下一波!");
+                clearInterval(roundTimer);
+                setTimeout(startNextWave, 1500);
+            }
+        }
+    }
+
+    function applyDamageToPlayer(target, damage) {
+        damage = Math.round(damage);
+        target.hp = Math.max(0, target.hp - damage);
+        AudioManager.playDamage();
+        triggerScreenShake();
+        updateCharacterUI(target.id);
+        createFloatingText(`-${damage}`, target.element, 'player-damage');
+
+        const icon = target.element?.querySelector('.char-icon');
+        if (icon) {
+            icon.classList.add('damaged');
+            setTimeout(() => icon.classList.remove('damaged'), 300);
+        }
+        if (target.hp === 0) {
+            logStep(`玩家 ${target.id} 已被擊敗!`);
+            if (players.every(p => p.hp === 0)) {
+                logStep("所有英雄都已陣亡!遊戲失敗!");
+                clearInterval(roundTimer);
+                showGameOverScreen();
+            }
+        }
+    }
+
+    async function animateAndApplyDropsAndFills() {
+        logStep("符文下落並填充新符文 (動畫)...");
+        const runeElementProto = gameBoardElement.querySelector('.rune');
+        if (!runeElementProto) { // Fallback if board is empty
+            dropRunes();
+            fillNewRunes();
+            renderBoard(false);
+            return;
+        }
+        const runeHeight = runeElementProto.offsetHeight;
+
+        const drops = [];
+        for (let c = 0; c < COLS; c++) {
+            let emptyRow = ROWS - 1;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r]?.[c]) {
+                    if (r !== emptyRow) {
+                        const runeElement = document.querySelector(`[data-id='${r}-${c}']`);
+                        drops.push({ element: runeElement, from: r, to: emptyRow });
+                    }
+                    emptyRow--;
+                }
+            }
+        }
+
+        drops.forEach(({ element, to }) => {
+            if (element) {
+                const newY = to * (runeHeight + 4); // 4 is grid-gap
+                element.style.top = `${newY}px`;
+            }
+        });
+        
+        dropRunes();
+        
+        const newRunes = [];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (!board[r]?.[c]) newRunes.push({ r, c });
+            }
+        }
+
+        fillNewRunes();
+        renderBoard(true);
+
+        newRunes.forEach(({ r, c }) => {
+            const runeElement = document.querySelector(`[data-id='${r}-${c}']`);
+            if (runeElement) {
+                const startRow = - (newRunes.filter(nr => nr.c === c && nr.r < r).length + 1);
+                const distance = (r - startRow) * runeHeight;
+                runeElement.style.setProperty('--start-y', `${-distance}px`);
+                runeElement.classList.add('dropping');
+            }
+        });
+        
+        await sleep(400);
+        renderBoard(false);
+    }
+
+
+    function dropRunes() {
+        for (let c = 0; c < COLS; c++) {
+            let emptyRow = ROWS - 1;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r]?.[c]) {
+                    if (r !== emptyRow) {
+                        board[emptyRow][c] = board[r][c];
+                        board[r][c] = null;
+                    }
+                    emptyRow--;
+                }
+            }
+        }
+    }
+
+    function fillNewRunes() {
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (board[r] && !board[r][c]) {
+                    board[r][c] = { color: generateSafeColor(r, c), type: RUNE_NORMAL, status: {} };
+                }
+            }
+        }
+    }
+
+    function updateScoreAndXP(matchCount) {
+        score += matchCount * 10 * (1 + (comboCounter - 1) * 0.1) * currentWave;
+        const xpGained = matchCount * XP_PER_RUNE;
+        playerXP += xpGained;
+
+        if (playerXP >= xpToNextLevel) {
+            levelUp();
+        }
+        updatePlayerUI();
+    }
+
+    function levelUp() {
+        playerLevel++;
+        playerXP -= xpToNextLevel;
+        xpToNextLevel = Math.round(xpToNextLevel * 1.5);
+        logStep(`玩家升級! 現在等級 ${playerLevel}!`);
+        
+        AudioManager.playLevelUp();
+        triggerScreenFlash('rgba(255, 215, 0, 0.5)');
+        showFloatingText("等級提升!", battleSceneElement, "level-up");
+        
+        BASE_DAMAGE_PER_RUNE = Math.round(INITIAL_BASE_DAMAGE_PER_RUNE * Math.pow(1.05, playerLevel - 1));
+
+        players.forEach(p => {
+            p.maxHp = Math.round(p.baseMaxHp * Math.pow(1.05, playerLevel - 1));
+            if (p.hp > 0) {
+                const healAmount = Math.round(p.maxHp * 0.50);
+                p.hp = Math.min(p.maxHp, p.hp + healAmount);
+                createFloatingText(`+${healAmount}`, p.element, 'heal');
+            }
+        });
+        updateAllCharacterUI();
+
+        if (playerXP >= xpToNextLevel) { levelUp(); }
+        updatePlayerUI();
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    // --- SKILL & STATUS EFFECT FUNCTIONS ---
+    
+    function showFloatingText(text, onElement, type = '') {
+        if (!battleSceneElement) return;
+        const floatingText = document.createElement('div');
+        floatingText.textContent = text;
+        floatingText.className = `floating-text ${type}`;
+        battleSceneElement.appendChild(floatingText);
+        setTimeout(() => floatingText.remove(), type ? 2000 : 1500);
+    }
+    
+    function createFloatingText(text, targetElement, type = 'enemy-damage') {
+        if (!targetElement || !battleSceneElement) return;
+        const textElement = document.createElement('div');
+        textElement.textContent = text;
+        textElement.className = `floating-damage-text ${type}`;
+        
+        const rect = targetElement.getBoundingClientRect();
+        const wrapperRect = gameWrapper.getBoundingClientRect();
+        const initialLeft = rect.left - wrapperRect.left + (rect.width / 2);
+        let initialTop = rect.top - wrapperRect.top + (rect.height / 2);
+
+        if (type === 'combo') initialTop += 20;
+
+        textElement.style.left = `${initialLeft}px`;
+        textElement.style.top = `${initialTop}px`;
+        textElement.style.transform = 'translateX(-50%)';
+
+        battleSceneElement.appendChild(textElement);
+        setTimeout(() => textElement.remove(), 1200);
+    }
+
+    function showComboText(count) {
+        if (!comboDisplayElement) return;
+        comboDisplayElement.textContent = `連擊 x${count}!`;
+        comboDisplayElement.classList.add('show');
+    }
+
+    function hideComboText() {
+        if (!comboDisplayElement) return;
+        comboDisplayElement.classList.remove('show');
+    }
+
+    function triggerScreenShake() {
+        if (!gameWrapper) return;
+        gameWrapper.classList.add('shake');
+        setTimeout(() => gameWrapper.classList.remove('shake'), 400);
+    }
+    
+    function triggerScreenFlash(color) {
+        if (!effectOverlay) return;
+        effectOverlay.style.backgroundColor = color;
+        effectOverlay.classList.remove('flash');
+        void effectOverlay.offsetWidth;
+        effectOverlay.classList.add('flash');
+    }
+
+    async function triggerPlayerSkill(player, power) {
+        logStep(`玩家 ${player.id} 施放技能: ${player.skill.name}`);
+        showFloatingText(player.skill.name, player.element);
+        const icon = player.element?.querySelector('.char-icon');
+        if (icon) icon.classList.add('casting-skill');
+        await sleep(500);
+        player.skill.execute(player, power);
+        if (icon) icon.classList.remove('casting-skill');
+    }
+    
+    async function handleColorBombActivation(pos, colorToClear) {
+        AudioManager.playSpecial();
+        triggerScreenShake();
+        logStep(`觸發 3號符文, 消除所有顏色為 ${colorToClear} 的符文。`);
+        const runesToDestroyCoords = new Set([`${pos.r},${pos.c}`]);
+        for(let r=0; r<ROWS; r++) {
+            for(let c=0; c<COLS; c++) {
+                if(board[r]?.[c]?.color === colorToClear) {
+                    runesToDestroyCoords.add(`${r},${c}`);
+                }
+            }
+        }
+        const destroyedCoords = Array.from(runesToDestroyCoords).map(s => s.split(',').map(Number));
+        await destroyRunes(destroyedCoords, false);
+    }
+
+    // --- Player Skill Implementations ---
+    function playerSkillSingleTarget(player, power) {
+        triggerScreenShake();
+        const livingEnemies = enemies.filter(e => e.hp > 0);
+        if (livingEnemies.length === 0) return;
+        const target = livingEnemies.sort((a,b) => b.hp - a.hp)[0];
+        const damage = power * BASE_DAMAGE_PER_RUNE * 2;
+        applyDamageToEnemy(target, damage);
+    }
+
+    function playerSkillAoeDamage(player, power) {
+        triggerScreenShake();
+        const livingEnemies = enemies.filter(e => e.hp > 0);
+        if (livingEnemies.length === 0) return;
+        const damage = power * BASE_DAMAGE_PER_RUNE * 0.8;
+        livingEnemies.forEach(e => applyDamageToEnemy(e, damage));
+    }
+    
+    function playerSkillHealLowest(player, power) {
+        const livingPlayers = players.filter(p => p.hp > 0);
+        if(livingPlayers.length === 0) return;
+        const target = livingPlayers.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+        const healAmount = power * 5;
+        target.hp = Math.min(target.maxHp, target.hp + healAmount);
+        AudioManager.playHeal();
+        updateCharacterUI(target.id);
+        createFloatingText(`+${healAmount}`, target.element, 'heal');
+    }
+
+    function playerSkillAoeHeal(player, power) {
+        const livingPlayers = players.filter(p => p.hp > 0);
+        if(livingPlayers.length === 0) return;
+        triggerScreenFlash('rgba(144, 238, 144, 0.4)');
+        const healAmount = power * 2;
+        livingPlayers.forEach(p => {
+             p.hp = Math.min(p.maxHp, p.hp + healAmount);
+             updateCharacterUI(p.id);
+             createFloatingText(`+${healAmount}`, p.element, 'heal');
+        });
+        AudioManager.playHeal();
+    }
+    
+    function playerSkillSingleTargetDebuff(player, power) {
+        const livingEnemies = enemies.filter(e => e.hp > 0);
+        if (livingEnemies.length === 0) return;
+        const target = livingEnemies[Math.floor(Math.random() * livingEnemies.length)];
+        const damage = power * BASE_DAMAGE_PER_RUNE;
+        applyDamageToEnemy(target, damage);
+    }
+
+    // Player ULTIMATE skills
+    async function playerUltimate_FieryRage(player) {
+        logStep(`玩家 ${player.id} 施放終極技能: 煉獄火海!`);
+        triggerScreenShake();
+        const runesToConvert = [];
+        for (let r = 0; r < ROWS; r++) { for (let c = 0; c < COLS; c++) {
+            if (board[r]?.[c]?.color !== player.colorIndex) runesToConvert.push({r, c});
+        }}
+        runesToConvert.sort(() => 0.5 - Math.random());
+        const count = Math.floor(runesToConvert.length / 3);
+        const convertedRunes = runesToConvert.slice(0, count);
+
+        convertedRunes.forEach(({r, c}) => { if (board[r]?.[c]) board[r][c].color = player.colorIndex; });
+        if (convertedRunes.length > 0) {
+            const {r, c} = convertedRunes[0];
+            if(board[r]?.[c]) board[r][c].type = RUNE_BOMB;
+        }
+        renderBoard(true);
+        await sleep(300);
+        await cascadeMatches();
+    }
+    
+    async function playerUltimate_FreezeAll(player) {
+        logStep(`玩家 ${player.id} 施放終極技能: 絕對零度!`);
+        triggerScreenFlash('rgba(173, 216, 230, 0.5)');
+        enemies.forEach(e => {
+            if (e.hp > 0) e.status.stunned = (e.rank === 'boss' ? 2 : 4);
+        });
+        await cascadeMatches();
+    }
+
+    async function playerUltimate_ExecuteLowest(player) {
+        logStep(`玩家 ${player.id} 施放終極技能: 暗影奇襲!`);
+        const livingEnemies = enemies.filter(e => e.hp > 0);
+        if (livingEnemies.length === 0) { await cascadeMatches(); return; }
+        const target = livingEnemies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+        const damage = target.maxHp * 0.5; // 50% max HP damage
+        applyDamageToEnemy(target, damage);
+        await sleep(300);
+        await cascadeMatches();
+    }
+
+    async function playerUltimate_CleanseAndHeal(player) {
+        logStep(`玩家 ${player.id} 施放終極技能: 自然祝福!`);
+        triggerScreenFlash('rgba(144, 238, 144, 0.5)');
+        // Cleanse board
+        for (let r = 0; r < ROWS; r++) { for (let c = 0; c < COLS; c++) {
+            if (board[r]?.[c]?.burning) delete board[r][c].burning;
+        }}
+        renderBoard(false);
+        // Heal party
+        const healAmount = player.maxHp * 0.5;
+        players.forEach(p => {
+            if (p.hp > 0) {
+                p.hp = Math.min(p.maxHp, p.hp + healAmount);
+                updateCharacterUI(p.id);
+                createFloatingText(`+${Math.round(healAmount)}`, p.element, 'heal');
+            }
+        });
+        await sleep(300);
+        await cascadeMatches();
+    }
+
+    async function playerUltimate_CreateBombs(player) {
+        logStep(`玩家 ${player.id} 施放終極技能: 雷神之怒!`);
+        const emptyRunes = [];
+        for (let r = 0; r < ROWS; r++) { for (let c = 0; c < COLS; c++) {
+            if (board[r]?.[c]?.type === RUNE_NORMAL) emptyRunes.push({r, c});
+        }}
+        emptyRunes.sort(() => 0.5 - Math.random());
+        for(let i=0; i<4; i++) {
+            if (emptyRunes[i]) {
+                const {r, c} = emptyRunes[i];
+                board[r][c] = { color: player.colorIndex, type: RUNE_BOMB, status: {} };
+            }
+        }
+        renderBoard(true);
+        await sleep(300);
+        await cascadeMatches();
+    }
+
+
+    // --- Enemy Skill Implementations ---
+    async function enemyCastFire(caster) {
+        AudioManager.playBurn();
+        triggerScreenFlash('rgba(255, 100, 0, 0.3)');
+        const emptyRunes = [];
+        for (let r=0; r<ROWS; r++) { for (let c=0; c<COLS; c++) {
+            if (board[r]?.[c] && !board[r][c].burning) emptyRunes.push({r,c});
+        }}
+        for (let i=0; i<3; i++) {
+            if (emptyRunes.length === 0) break;
+            const randIndex = Math.floor(Math.random() * emptyRunes.length);
+            const {r, c} = emptyRunes.splice(randIndex, 1)[0];
+            if (board[r]?.[c]) board[r][c].burning = true;
+        }
+        renderBoard(false);
+    }
+    
+    async function enemyCastGroupAttack(caster) {
+        const livingPlayers = players.filter(p => p.hp > 0);
+        livingPlayers.forEach(p => applyDamageToPlayer(p, ENEMY_BASE_DAMAGE * 0.7));
+    }
+    
+    async function enemyCastFreeze(caster) {
+        AudioManager.playDebuff();
+        if (frozenRuneColor !== null) {
+            logStep(`冰凍技能失敗，已有顏色被冰凍。轉為普通攻擊。`);
+            const livingPlayers = players.filter(p => p.hp > 0);
+            if (livingPlayers.length > 0) {
+                const target = livingPlayers[Math.floor(Math.random() * livingPlayers.length)];
+                applyDamageToPlayer(target, ENEMY_BASE_DAMAGE);
+            }
+            return;
+        }
+        const availableColors = Array.from({length: RUNE_TYPES}, (_, i) => i);
+        const targetColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+        const targetableRunes = [];
+        for (let r = 0; r < ROWS; r++) { for (let c = 0; c < COLS; c++) {
+            const rune = board[r]?.[c];
+            if (rune?.color === targetColor && rune.type === RUNE_NORMAL) targetableRunes.push(rune);
+        }}
+        if (targetableRunes.length < 3) {
+             logStep(`冰凍技能失敗，目標顏色符文太少。轉為普通攻擊。`);
+            const livingPlayers = players.filter(p => p.hp > 0);
+            if (livingPlayers.length > 0) applyDamageToPlayer(livingPlayers[0], ENEMY_BASE_DAMAGE);
+            return;
+        }
+        const freezePercent = Math.random() * 0.2 + 0.1;
+        const numToFreeze = Math.max(1, Math.floor(targetableRunes.length * freezePercent));
+        for (let i = targetableRunes.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [targetableRunes[i], targetableRunes[j]] = [targetableRunes[j], targetableRunes[i]];
+        }
+        const runesToFreeze = targetableRunes.slice(0, numToFreeze);
+        runesToFreeze.forEach(rune => {
+            if (rune.status) rune.status.frozen = Math.floor(Math.random() * 3) + 3;
+        });
+        frozenRuneColor = targetColor;
+        logStep(`${runesToFreeze.length} 個 ${targetColor} 色符文被冰凍了!`);
+        renderBoard(false);
+    }
+    
+    // --- Board Effects ---
+    async function handleBurningEffects() {
+        const burningRunes = [];
+        for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+            if (board[r]?.[c]?.burning) burningRunes.push({r,c});
+        }
+        
+        if (burningRunes.length > 0) {
+            logStep(`火焰對玩家造成 ${burningRunes.length * BURNING_DAMAGE} 點傷害`);
+            const livingPlayers = players.filter(p => p.hp > 0);
+            if(livingPlayers.length > 0) {
+                const target = livingPlayers[0];
+                applyDamageToPlayer(target, burningRunes.length * BURNING_DAMAGE);
+                AudioManager.playBurn();
+            }
+            await spreadFire(burningRunes);
+        }
+    }
+
+    async function spreadFire(burningRunes) {
+        const newFlames = new Set();
+        const directions = [[-1,0], [1,0], [0,-1], [0,1]];
+        burningRunes.forEach(({r, c}) => {
+            if (Math.random() < BURNING_SPREAD_CHANCE) {
+                 const [dr, dc] = directions[Math.floor(Math.random() * 4)];
+                 const nr = r + dr, nc = c + dc;
+                 if (nr >=0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr]?.[nc] && !board[nr][nc].burning) {
+                     newFlames.add(`${nr},${nc}`);
+                 }
+            }
+        });
+        if (newFlames.size > 0) {
+            logStep(`火焰蔓延到 ${newFlames.size} 個新位置!`);
+            newFlames.forEach(coord => {
+                const [r, c] = coord.split(',').map(Number);
+                if (board[r]?.[c]) board[r][c].burning = true;
+            });
+            renderBoard(false);
+        }
+    }
+
+    function renderEnemyIntents(clear = false) {
+        document.querySelectorAll('.enemy-intent-icon').forEach(icon => icon.remove());
+        if (clear) return;
+        enemies.forEach(enemy => {
+            if (enemy.hp > 0 && enemy.telegraphingSkill) {
+                const intentIcon = document.createElement('div');
+                intentIcon.className = 'enemy-intent-icon';
+                intentIcon.textContent = enemy.telegraphingSkill.icon || '❗';
+                enemy.element?.querySelector('.char-icon')?.appendChild(intentIcon);
+            }
+        });
+    }
+
+    function showGameOverScreen() {
+        if (!gameOverScreenElement) return;
+        AudioManager.playGameOver();
+        const finalScoreEl = document.getElementById('final-score');
+        const finalWaveEl = document.getElementById('final-wave');
+        if (finalScoreEl) finalScoreEl.textContent = Math.round(score);
+        if (finalWaveEl) finalWaveEl.textContent = currentWave;
+        gameOverScreenElement.classList.add('show');
+    }
+
+    function resetGame() {
+        logStep("--- 重置遊戲 ---");
+        score = 0;
+        playerLevel = 1;
+        playerXP = 0;
+        xpToNextLevel = 100;
+        currentWave = 1;
+        BASE_DAMAGE_PER_RUNE = INITIAL_BASE_DAMAGE_PER_RUNE;
+        ENEMY_BASE_DAMAGE = INITIAL_ENEMY_BASE_DAMAGE;
+        logCounter = 1;
+        comboCounter = 0;
+        frozenRuneColor = null;
+        selectedRune = null;
+        isSwapping = false;
+        playerTurnTimerStarted = false;
+        clearInterval(roundTimer);
+
+        if (gameOverScreenElement) gameOverScreenElement.classList.remove('show');
+        initializeCharacters();
+        initializeBoard();
+        updateAllCharacterUI();
+        prepareNextPlayerTurn();
+        logStep("--- 遊戲已重置 ---");
+    }
+
+    async function startNextWave() {
+        currentWave++;
+        logStep(`---------- 第 ${currentWave} 波 開始 ----------`);
+        AudioManager.playVictory();
+        showFloatingText(`第 ${currentWave} 波`, battleSceneElement, "wave-start");
+        
+        const isBossWave = currentWave > 0 && currentWave % 10 === 0;
+        const isEliteWave = currentWave > 0 && currentWave % 5 === 0 && !isBossWave;
+        
+        ENEMY_BASE_DAMAGE = Math.round(INITIAL_ENEMY_BASE_DAMAGE * Math.pow(1.1, currentWave - 1));
+        
+        let eliteAssigned = false;
+        enemies.forEach(e => {
+            e.baseMaxHp = 100 * Math.pow(1.1, currentWave - 1);
+            e.rank = 'normal';
+            e.status = {};
+            delete e.modifiers;
+            delete e.telegraphingSkill;
+            delete e.shieldHp;
+        });
+
+        if (isBossWave) {
+            const boss = enemies.find(e => e.id === 'a');
+            if (boss) {
+                boss.rank = 'boss';
+                boss.baseMaxHp *= 3;
+                boss.shieldColor = 4; // Purple
+                boss.shieldHp = 15 + (currentWave/10 * 5);
+                logStep(`Boss 出現! ${boss.id} 帶著 ${boss.shieldHp} 點的護盾!`);
+            }
+        } else if (isEliteWave) {
+            const randomEnemy = enemies[Math.floor(Math.random() * enemies.length)];
+            randomEnemy.rank = 'elite';
+            randomEnemy.baseMaxHp *= 1.8;
+            randomEnemy.modifiers = ['thorns'];
+            logStep(`精英敵人出現! ${randomEnemy.id} 擁有 荊棘 屬性!`);
+        }
+        
+        enemies.forEach(e => {
+            e.maxHp = e.baseMaxHp;
+            e.hp = e.maxHp;
+        });
+        
+        updateAllCharacterUI();
+        updatePlayerUI();
+        
+        await sleep(1000);
+        prepareNextPlayerTurn();
+    }
+
+    // --- 事件監聽 ---
+    function onPlayerCharacterClick(event) {
+        if (isSwapping || !playerTurnTimerStarted) return;
+        const id = event.currentTarget.dataset.id;
+        const player = players.find(p => p.id === id);
+        if (player && player.hp > 0 && player.mp >= player.maxMp) {
+            AudioManager.initialize();
+            AudioManager.playUltimate();
+            logStep(`玩家 ${player.id} 點擊施放終極技能!`);
+            
+            isSwapping = true;
+            if(gameBoardElement) gameBoardElement.style.pointerEvents = 'none';
+            
+            player.mp = 0;
+            updateCharacterUI(player.id);
+            
+            showFloatingText(player.skill.ultimate.name, player.element);
+            const icon = player.element?.querySelector('.char-icon');
+            if (icon) icon.classList.add('casting-skill');
+            
+            // The ultimate function is async and will handle the turn flow
+            setTimeout(async () => {
+                if (icon) icon.classList.remove('casting-skill');
+                await player.skill.ultimate.execute(player);
+                // After ultimate cascade finishes, enemy turn will start
+                if(playerTurnTimerStarted) { // if cascade didn't trigger enemy turn
+                    setTimeout(enemyTurn, 500);
+                }
+            }, 500);
+        }
+    }
+
+    function setupEventListeners() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 't' && e.ctrlKey && e.altKey) {
+                const now = Date.now();
+                if (now - lastTKeyPressTime < 500) toggleTestMode();
+                lastTKeyPressTime = now;
+            }
+            if (testModeActive && e.ctrlKey) {
+                e.preventDefault();
+                handleTestCommands(e.key);
+            }
+        });
+        
+        document.querySelectorAll('.player-team .character-slot').forEach(slot => {
+            slot.addEventListener('pointerdown', onPlayerCharacterClick);
+        });
+
+        document.getElementById('restart-button')?.addEventListener('click', resetGame);
+    }
+
+    function toggleTestMode() {
+        testModeActive = !testModeActive;
+        gameWrapper?.classList.toggle('test-mode-on', testModeActive);
+        if (testModeIndicator) testModeIndicator.style.display = testModeActive ? 'block' : 'none';
+        logStep(`測試模式已 ${testModeActive ? '啟動' : '關閉'}`);
+        if (testModeActive) clearInterval(roundTimer);
+        else prepareNextPlayerTurn();
+    }
+
+    function handleTestCommands(key) {
+        const { r, c } = lastClickedRunePos;
+        if (r === null || c === null && !['5','6','7','8','9','l','m'].includes(key)) return;
+        logStep(`測試指令:在(${r},${c})執行 Ctrl+${key}`);
+
+        let newRuneData = board[r]?.[c];
+        
+        switch (key) {
+            case '1': if(newRuneData) newRuneData.type = RUNE_STRIPED_H; break;
+            case '2': if(newRuneData) newRuneData.type = RUNE_STRIPED_V; break;
+            case '3': if(newRuneData) newRuneData.type = RUNE_BOMB; break;
+            case '4': if(newRuneData) board[r][c] = { color: undefined, type: RUNE_COLOR_BOMB, status: {} }; break;
+            case '5': players.forEach(p => p.hp = 1); updateAllCharacterUI(); break;
+            case '6': enemies.forEach(e => e.hp = 1); updateAllCharacterUI(); break;
+            case '7': enemies.forEach(e => e.hp = 0); updateAllCharacterUI(); setTimeout(startNextWave, 500); break;
+            case '8': players.forEach(p => p.hp = 0); updateAllCharacterUI(); showGameOverScreen(); break;
+            case '9': initializeBoard(); break;
+            case 'l': playerXP = xpToNextLevel; updateScoreAndXP(0); break;
+            case 'm': players.forEach(p => p.mp=p.maxMp); updateAllCharacterUI(); break;
+            case 'b': if(newRuneData) newRuneData.burning = !newRuneData.burning; break;
+            default: return;
+        }
+        renderBoard(false);
+    }
+    
+    initializeGame();
+});
+</script>
+</body>
+</html>
